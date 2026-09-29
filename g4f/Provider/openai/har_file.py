@@ -80,9 +80,15 @@ def readHAR(request_config: RequestConfig):
                     try:
                         if "openai-sentinel-proof-token" in v_headers:
                             request_config.headers = v_headers
-                            request_config.proof_token = json.loads(base64.b64decode(
-                                v_headers["openai-sentinel-proof-token"].split("gAAAAAB", 1)[-1].encode()
-                            ).decode())
+                            proof_b64 = v_headers["openai-sentinel-proof-token"].split("gAAAAAB", 1)[-1]
+                            if proof_b64.endswith("~S"):
+                                proof_b64 = proof_b64[:-2]
+                            elif proof_b64.endswith("~"):
+                                proof_b64 = proof_b64[:-1]
+                            padding = 4 - len(proof_b64) % 4
+                            if padding != 4:
+                                proof_b64 += "=" * padding
+                            request_config.proof_token = json.loads(base64.b64decode(proof_b64.encode()).decode())
                         if "openai-sentinel-turnstile-token" in v_headers:
                             request_config.turnstile_token = v_headers["openai-sentinel-turnstile-token"]
                         if "authorization" in v_headers:
